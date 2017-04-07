@@ -1,17 +1,40 @@
 {
-    "buildNpmdoc":"pino",
+    "author": "kai zhu <kaizhu256@gmail.com>",
+    "buildNpmdoc": "pino",
+    "description": "api documentation for [pino (v4.2.4)](https://github.com/pinojs/pino#readme) [![npm package](https://img.shields.io/npm/v/npmdoc-pino.svg?style=flat-square)](https://www.npmjs.org/package/npmdoc-pino) [![travis-ci.org build-status](https://api.travis-ci.org/npmdoc/node-npmdoc-pino.svg)](https://travis-ci.org/npmdoc/node-npmdoc-pino)",
     "devDependencies": {
-        "pino": "*",
         "electron-lite": "kaizhu256/node-electron-lite#alpha",
+        "pino": "*",
         "utility2": "kaizhu256/node-utility2#alpha"
     },
-    "name":"npmdoc-pino",
+    "engines": {
+        "node": ">=4.0"
+    },
+    "homepage": "https://github.com/npmdoc/node-npmdoc-pino",
+    "keywords": [
+        "documentation",
+        "pino"
+    ],
+    "license": "MIT",
+    "main": "lib.npmdoc_pino.js",
+    "name": "npmdoc-pino",
+    "nameAlias": "npmdoc_pino",
+    "nameOriginal": "npmdoc-pino",
+    "os": [
+        "darwin",
+        "linux"
+    ],
     "repository": {
         "type": "git",
         "url": "https://github.com/npmdoc/node-npmdoc-pino"
     },
     "scripts": {
-        "build-ci": "utility2 shReadmeTest build_ci.sh"
+        "build-ci": "utility2 shReadmeTest build_ci.sh",
+        "env": "env",
+        "heroku-postbuild": "(set -e; npm install \"kaizhu256/node-utility2#alpha\"; utility2 shDeployHeroku)",
+        "postinstall": "if [ -f npm_scripts.sh ]; then ./npm_scripts.sh postinstall; fi",
+        "start": "(set -e; export PORT=${PORT:-8080}; utility2 start test.js)",
+        "test": "(set -e; export PORT=$(utility2 shServerPortRandom); utility2 test test.js)"
     },
     "version": "0.0.1"
 }
