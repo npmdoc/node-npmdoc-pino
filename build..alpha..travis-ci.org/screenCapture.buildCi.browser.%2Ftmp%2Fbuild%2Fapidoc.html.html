@@ -47,12 +47,21 @@
 }
 </style>
 <h1>api documentation for
-    <a href="https://github.com/pinojs/pino#readme">pino (v4.2.4)</a>
+    <a href="https://github.com/pinojs/pino#readme">pino (v4.3.0)</a>
 </h1>
 <h4>super fast, all natural json logger</h4>
 <div class="apidocSectionDiv"><a href="#apidoc.tableOfContents" id="apidoc.tableOfContents"><h1>table of contents</h1></a><ol>
 
     <li class="apidocModuleLi"><a href="#apidoc.module.pino">module pino</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.pino.pino">
+            function <span class="apidocSignatureSpan"></span>pino
+            <span class="apidocSignatureSpan">(opts, stream)</span>
+            </a>
+
+        </li>
 
         <li>
 
@@ -317,6 +326,84 @@
 
 
     <h2>
+        <a href="#apidoc.element.pino.pino" id="apidoc.element.pino.pino">
+        function <span class="apidocSignatureSpan"></span>pino
+        <span class="apidocSignatureSpan">(opts, stream)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function pino(opts, stream) {
+  var iopts = opts
+  var istream = stream
+  if (iopts &amp;&amp; (iopts.writable || iopts._writableState)) {
+    istream = iopts
+    iopts = defaultOptions
+  }
+  iopts = Object.assign({}, defaultOptions, iopts)
+  if (iopts.extreme &amp;&amp; iopts.prettyPrint) throw Error('cannot enable pretty print in extreme mode')
+  istream = istream || process.stdout
+  if (iopts.prettyPrint) {
+    var prettyOpts = Object.assign({ messageKey: iopts.messageKey }, iopts.prettyPrint)
+    var pstream = pretty(prettyOpts)
+    var origStream = istream
+    pump(pstream, origStream, function (err) {
+      if (err) instance.emit('error', err)
+    })
+    istream = pstream
+  }
+
+  // internal options
+  iopts.stringify = iopts.safe ? stringifySafe : JSON.stringify
+  iopts.formatOpts = {lowres: true}
+  iopts.messageKeyString = `,"${iopts.messageKey}":`
+  iopts.end = ',"v":' + LOG_VERSION + '}\n'
+  iopts.cache = !iopts.extreme ? null : {
+    size: 4096,
+    buf: ''
+  }
+  iopts.chindings = ''
+
+  if (iopts.enabled === false) {
+    iopts.level = 'silent'
+  }
+
+  var instance = Object.create(pinoPrototype)
+  instance.stream = istream
+  tools.defineLevelsProperty(instance)
+  tools.applyOptions.call(instance, iopts)
+  if (iopts.cache) setTimeout(waitForFDSettle, 100)
+
+  var settleTries = 0
+  function waitForFDSettle () {
+    var isBlockable = tools.streamIsBlockable(istream)
+    if (isBlockable === false &amp;&amp; settleTries &gt; 10) {
+      return instance.emit('error', Error('stream must have a file descriptor in extreme mode'))
+    } else if (isBlockable === true) {
+      return events(instance, extremeModeExitHandler)
+    }
+    settleTries += 1
+    setTimeout(waitForFDSettle, 100)
+  }
+
+  function extremeModeExitHandler () {
+    var buf = iopts.cache.buf
+    if (buf) {
+      // We need to block the process exit long enough to flush the buffer
+      // to the destination stream. We do that by forcing a synchronous
+      // write directly to the stream's file descriptor.
+      var fd = (istream.fd) ? istream.fd : istream._handle.fd
+      fs.writeSync(fd, buf)
+    }
+  }
+
+  return instance
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+
+    <h2>
         <a href="#apidoc.element.pino.pretty" id="apidoc.element.pino.pretty">
         function <span class="apidocSignatureSpan">pino.</span>pretty
         <span class="apidocSignatureSpan">(opts)</span>
@@ -327,6 +414,8 @@
   var timeTransOnly = opts &amp;&amp; opts.timeTransOnly
   var formatter = opts &amp;&amp; opts.formatter
   var levelFirst = opts &amp;&amp; opts.levelFirst
+  var messageKey = opts &amp;&amp; opts.messageKey
+  messageKey = messageKey || 'msg'
 
   var stream = split(mapLine)
   var ctx
@@ -382,14 +471,14 @@
     }
     line += value.pid + ' on ' + value.hostname + ')'
     line += ': '
-    if (value.msg) {
-      line += ctx.cyan(value.msg)
+    if (value[messageKey]) {
+      line += ctx.cyan(value[messageKey])
     }
     line += '\n'
     if (value.type === 'Error') {
       line += '    ' + withSpaces(value.stack) + '\n'
     } else {
-      line += filter(value)
+      line += filter(value, messageKey)
     }
     return line
   }
@@ -780,6 +869,8 @@ if (p &gt; 1) {
   this.cache = opts.cache
   this.formatOpts = opts.formatOpts
   this.onTerminated = opts.onTerminated
+  this.messageKey = opts.messageKey
+  this.messageKeyString = opts.messageKeyString
 
   if (opts.level &amp;&amp; opts.levelVal) {
     var levelIsStandard = levels.isStandardLevel(opts.level)
@@ -918,7 +1009,7 @@ function waitForFDSettle () {
   }
 }</pre></li>
     <li>example usage<pre class="apidocCodePre">...
-  writable: true
+  enumerable: true
 }
 })
 
